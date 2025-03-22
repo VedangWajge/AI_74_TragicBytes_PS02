@@ -10,6 +10,7 @@ export interface ChatState {
   messages: Message[];
   isLoading: boolean;
   context?: string;
+  language: string;  // ✅ Added language property
 }
 
 export interface Category {

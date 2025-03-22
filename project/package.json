@@ -10,11 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "clsx": "^2.1.0",
+    "i18next": "^24.2.3",
     "lucide-react": "^0.344.0",
+    "openai": "^4.28.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "openai": "^4.28.0",
-    "clsx": "^2.1.0"
+    "react-i18next": "^15.4.1",
+    "vite-react-typescript-starter": "file:"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",

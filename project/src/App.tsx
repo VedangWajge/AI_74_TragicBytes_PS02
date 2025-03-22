@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Bot, AlertTriangle, Sparkles } from 'lucide-react';
+import { Send, Loader2, Bot, AlertTriangle, Sparkles, Globe } from 'lucide-react';
 import { ChatMessage } from './components/ChatMessage';
 import type { Message, ChatState } from './types';
 import { detectCategory, shouldEscalate } from './utils/categoryDetection';
@@ -19,12 +19,21 @@ Your responses should be:
 
 If you cannot fully resolve an issue, acknowledge that and suggest escalation to the appropriate team.`;
 
+const SUPPORTED_LANGUAGES = {
+  en: 'English',
+  hi: 'Hindi',
+  es: 'Spanish',
+  fr: 'French'
+};
+
 function App() {
   const [chatState, setChatState] = useState<ChatState>({
     messages: [],
     isLoading: false,
-    context: 'enterprise'
+    context: 'enterprise',
+    language: 'en' // Default language
   });
+
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -35,6 +44,10 @@ function App() {
   useEffect(() => {
     scrollToBottom();
   }, [chatState.messages]);
+
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setChatState(prev => ({ ...prev, language: e.target.value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,11 +62,11 @@ function App() {
       category,
       needsEscalation
     };
-    
+
     setChatState(prev => ({
       ...prev,
       messages: [...prev.messages, userMessage],
-      isLoading: true,
+      isLoading: true
     }));
     setInput('');
 
@@ -68,7 +81,7 @@ function App() {
           })),
           {
             role: 'user',
-            content: `[Category: ${category}]${needsEscalation ? ' [Needs Escalation]' : ''}\n\n${input}`
+            content: `[Language: ${chatState.language}] [Category: ${category}]${needsEscalation ? ' [Needs Escalation]' : ''}\n\n${input}`
           }
         ],
       });
@@ -85,26 +98,24 @@ function App() {
       };
 
       setChatState(prev => ({
+        ...prev,
         messages: [...prev.messages, assistantMessage],
-        isLoading: false,
-        context: prev.context
+        isLoading: false
       }));
     } catch (error) {
       console.error('Error:', error);
-      
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      
+
       const assistantErrorMessage: Message = {
         role: 'assistant',
-        content: `I apologize, but I encountered an error: ${errorMessage}. Please try again.`,
+        content: `I apologize, but I encountered an error. Please try again.`,
         category: 'technical',
         needsEscalation: true
       };
 
       setChatState(prev => ({
+        ...prev,
         messages: [...prev.messages, assistantErrorMessage],
-        isLoading: false,
-        context: prev.context
+        isLoading: false
       }));
     }
   };
@@ -116,7 +127,7 @@ function App() {
           {/* Header */}
           <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 p-8">
             <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,black)] pointer-events-none" />
-            <div className="relative">
+            <div className="relative flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20">
                   <Bot className="w-8 h-8 text-white" />
@@ -131,9 +142,23 @@ function App() {
                   </p>
                 </div>
               </div>
+
+              {/* Language Selector */}
+              <div className="flex items-center gap-2">
+                <Globe className="w-5 h-5 text-white" />
+                <select
+                  value={chatState.language}
+                  onChange={handleLanguageChange}
+                  className="px-3 py-2 rounded-md border border-white/30 bg-white/20 text-white text-sm focus:outline-none focus:ring-2 focus:ring-white"
+                >
+                  {Object.entries(SUPPORTED_LANGUAGES).map(([key, name]) => (
+                    <option key={key} value={key} className="text-black">{name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
-          
+
           {/* Chat Container */}
           <div className="h-[600px] flex flex-col bg-gradient-to-b from-gray-50 to-white">
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -147,22 +172,11 @@ function App() {
                 </div>
               )}
               {chatState.messages.map((message, index) => (
-                <div key={index} className="relative">
-                  <ChatMessage message={message} />
-                  {message.needsEscalation && (
-                    <div className="absolute top-2 right-2 flex items-center gap-1 text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full text-sm font-medium border border-amber-200/50 shadow-sm">
-                      <AlertTriangle className="w-4 h-4" />
-                      Needs Attention
-                    </div>
-                  )}
-                </div>
+                <ChatMessage key={index} message={message} />
               ))}
               {chatState.isLoading && (
                 <div className="flex items-center justify-center p-4">
-                  <div className="flex items-center gap-3 text-blue-600">
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                    <span className="text-sm font-medium">Processing your request...</span>
-                  </div>
+                  <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
                 </div>
               )}
               <div ref={messagesEndRef} />
@@ -176,14 +190,10 @@ function App() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Type your message here..."
-                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm placeholder:text-gray-400 text-gray-600"
+                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
                   disabled={chatState.isLoading}
                 />
-                <button
-                  type="submit"
-                  disabled={chatState.isLoading}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium shadow-sm transition-all duration-200 ease-in-out"
-                >
+                <button type="submit" disabled={chatState.isLoading} className="px-6 py-3 bg-blue-600 text-white rounded-xl flex items-center gap-2">
                   <Send className="w-5 h-5" />
                   Send
                 </button>
